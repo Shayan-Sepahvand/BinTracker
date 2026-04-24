@@ -1,7 +1,21 @@
 
+Question (1) - Part (a)
 
+Question 1 - Part A: Model Selection and Motivation
+Enhanced Version:
+For this task, I utilized the YOLOv10 architecture. The motivation behind this choice is its state-of-the-art balance between inference speed and accuracy, specifically its "NMS-free" training which reduces latency.
 
+During initial testing, I observed that the pre-trained COCO weights frequently misclassified the garbage bin as a "person" (Class ID 0) or ignored it entirely. To resolve this, I performed fine-tuning on a targeted dataset. My objective was to move beyond generic detection and specifically account for environmental factors present in the test data, such as motion blur, partial occlusion by workers, and significant scale variations.
 
+I selected the [Insert Dataset Name Here] public industrial dumpster dataset because its imagery closely mirrors the target environment and provides sufficient volume for convergence. To improve model robustness, I implemented a data augmentation pipeline focusing on:
+
+Spatial Augmentation: Scaling and translation to handle varying camera distances.
+
+Occlusion Modeling: Introducing random erasing to simulate bins partially blocked by personnel or equipment.
+
+The efficacy of this approach is demonstrated in the processed output video, where the tracking remains consistent and the bounding box remains stable despite the challenging conditions.
+
+For the inference time the average and the time are plotted in RES/inference_perf.png which shows and average around 7ms<90ms
 
 A gpu with the following specification including model, driver, VRAM, and the CUDA version are used to complete this assignment:
 
@@ -41,21 +55,7 @@ Fri Apr 24 10:32:58 2026
 
 
 
-Question 1 - Part A: Model Selection and Motivation
-Enhanced Version:
-For this task, I utilized the YOLOv10 architecture. The motivation behind this choice is its state-of-the-art balance between inference speed and accuracy, specifically its "NMS-free" training which reduces latency.
 
-During initial testing, I observed that the pre-trained COCO weights frequently misclassified the garbage bin as a "person" (Class ID 0) or ignored it entirely. To resolve this, I performed fine-tuning on a targeted dataset. My objective was to move beyond generic detection and specifically account for environmental factors present in the test data, such as motion blur, partial occlusion by workers, and significant scale variations.
-
-I selected the [Insert Dataset Name Here] public industrial dumpster dataset because its imagery closely mirrors the target environment and provides sufficient volume for convergence. To improve model robustness, I implemented a data augmentation pipeline focusing on:
-
-Spatial Augmentation: Scaling and translation to handle varying camera distances.
-
-Occlusion Modeling: Introducing random erasing to simulate bins partially blocked by personnel or equipment.
-
-The efficacy of this approach is demonstrated in the processed output video, where the tracking remains consistent and the bounding box remains stable despite the challenging conditions.
-
-For the inference time the average and the time are plotted in RES/inference_perf.png which shows and average around 7ms<90ms
 
 Question 1 - Part B: Training Strategy and Implementation
 Enhanced Version:
