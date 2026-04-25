@@ -96,6 +96,9 @@ These augmentations were critical for improving detection consistency under chal
 
  
 Furthermore, the bounding box coordinates are stored in the /results/1a.csv
+
+<img src="./results/inference_perf.png" alt="Bin Trajectory" width="500"/>
+
 <!-- ---================================================================================================================== -->
 
 ## Question 1 - Part B: Occlusion continuity
@@ -222,23 +225,22 @@ def load_waypoints(path: str):
         frame_idx = int(marker["approx_frame"])
         waypoints.append([u, v, i, frame_idx]) 
     return np.array(waypoints, dtype=np.float64)
-    ```
+
+```
 
 
 Next, the estimated ground-truth stops are extracted and given as:
 
-A [     2.2227 -1.4127e-08     0.77307]
-------------------------------------------
-B [      3.957    -0.67358     0.60103]
------------------------------------------
-C [     3.7013     0.38184     0.78677]
+A [2.2227, -1.4127e-08, 0.77307] (m)
+B [3.957, -0.67358, 0.60103] (m)
+C [3.7013, 0.38184, 0.78677] (m)
 
 
 The computed RMSE between the GT and the estimated stop points are:
 
 ```bash
 =============================================
-[run.sh] RMSE per axis: x=0.15, y=1.06, z=0.44
+[run.sh] RMSE per axis (m): x=0.15, y=1.06, z=0.44
 =============================================
 ```
 
@@ -281,9 +283,7 @@ A top-down view of the bin trajecory in the world frame along with the three sto
 
 ## Question 3 - Part C: Kalman filter smoothing
 
-The state vector includes the the [x y z vx vy vz], yet the observation vector is limited to the postiion.
-
-The xyz positino graph of the measured vs the filtered signals  are illustrated in the follwoing figure. 
+The state vector includes the the [x y z vx vy vz], yet the observation vector is limited to the postiion.The xyz positino graph of the measured vs the filtered signals  are illustrated in the follwoing figure. 
 
 <img src="./results/trajectory_kf_vs_raw.png" alt="KF Results vs. raw measurements" width="500"/>
 
