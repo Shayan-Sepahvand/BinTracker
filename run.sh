@@ -2,6 +2,7 @@
 
 
 # ./run.sh input.mp4 calib.json results --gpu
+# ./run.sh --video input.mp4 --calib calib.json
 
 # --- parse args -------------------------------------------------------------
 # 1. Set default values

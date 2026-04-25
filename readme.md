@@ -52,6 +52,15 @@ pyenv install 3.10.14
 sudo apt install -y python3-venv
 ```
 
+---
+
+## ⚙️ How to run
+
+```bash
+./run.sh --video input.mp4 --calib calib.json --gpu --kalman
+```
+
+
 
 ---
 
@@ -327,7 +336,38 @@ Z (Up)          | 0.0101     | 0.0052     | 48.6%
 
 ## Question 3 - Part D: Edge deployment notes (Jetson Orin NX)
 
-TBC.
+This section outlines the architectural migration of the pipeline from a fixed-camera workstation to a **Jetson Orin NX** companion computer mounted on a moving UAV for real-time trajectory tracking.
+
+### 1. Model Quantization Strategy (NVIDIA TensorRT)
+To achieve real-time performance on the edge, we bypass general-purpose inference engines in favor of **TensorRT**.
+
+* **Optimization Path:** Since Jetson Orin NX utilizes NVIDIA’s Ampere architecture, we utilize **FP16 (Half Precision)** as the primary target. While INT8 offers higher throughput, FP16 provides the best balance of "mAP preservation" and speed without requiring the complex calibration datasets needed for INT8.
+* **Engine vs. RKNN:** We strictly utilize **TensorRT**. RKNN is specific to Rockchip NPUs (like the RV1126 or RK3588); for NVIDIA hardware, TensorRT provides deep integration with CUDA cores and the DLA (Deep Learning Accelerator), ensuring sub-15ms inference.
+
+### 2. Dynamic Coordinate Transformation (IMU Fusion)
+Unlike the fixed-camera setup where the transform is constant, a moving UAV requires a dynamic transformation from the **Camera Frame ($C$)** to the **World Frame ($W$)**.
+
+* **The Chain:** $P_{world} = T_{body \to world}(t) \cdot T_{camera \to body} \cdot P_{camera}$
+* **EKF Integration:** We fuse the model’s visual detections with the UAV's internal **IMU (Inertial Measurement Unit)** and GPS via an **Extended Kalman Filter (EKF)**. This filters out high-frequency vibrations and compensates for the UAV's roll, pitch, and yaw in real-time, ensuring the "Bin Trajectory" remains stable even during aggressive maneuvers.
+
+### 3. Flight Controller Communication (MAVLink over UART)
+The Jetson communicates with the Flight Controller (e.g., Pixhawk/Cube) via a dedicated UART bridge (TTL 3.3V).
+
+* **Protocol:** MAVLink 2.0
+* **Message Type:** `VISION_POSITION_ESTIMATE` (#102) or `LANDING_TARGET` (#149) depending on the mission phase.
+* **Frequency:** **30Hz to 50Hz**. Higher frequencies are avoided to prevent saturating the flight controller's CPU, while anything lower than 20Hz introduces control-loop instability (latency jitter).
+* **Baud Rate:** 921,600 bps (to ensure low-latency serial transport).
+
+### 4. Latency Budget Breakdown
+To maintain a stable flight control loop, the "Photon-to-Actuator" latency must be minimized. Our target budget is **< 40ms**.
+
+| Stage | Process | Est. Latency |
+| :--- | :--- | :--- |
+| **Capture** | CSI-Camera MIPI frames to VRAM | 8ms |
+| **Detect** | TensorRT FP16 Inference (Orin NX) | 12ms |
+| **Localize** | EKF Update & Coordinate Transform | 4ms |
+| **Transmit** | MAVLink Packet Serialization & UART | 2ms |
+| **Total** | **End-to-End Latency** | **~26ms (~38 FPS)** |
 ---
 
 

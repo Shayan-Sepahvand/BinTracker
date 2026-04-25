@@ -1,9 +1,9 @@
 weights
 dumpster_dataset
 .venv
-venv
 runs
 results/detections
+results/BinTrackDemo.mp4
 Skyscouter_CV_Assessment_v2.pdf
 Input sample.mp4
 input.mp4
