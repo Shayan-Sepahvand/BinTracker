@@ -1,6 +1,8 @@
 
+# 🚀AI-Enabled Industrial Bin Detection and Trajectory Construction
+
+
 # Pre-requisits
-# 🚀 CUDA-Based Project
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10+-blue.svg">
@@ -246,12 +248,13 @@ def load_waypoints(path: str):
 
 ```
 
+The estimated ground-truth stops for the bin trajectory were extracted as 3D spatial coordinates (measured in meters). These points serve as the reference for tracking accuracy.
 
-Next, the estimated ground-truth stops are extracted and given as:
-
-A [2.2227, -1.4127e-08, 0.77307] (m)
-B [3.957, -0.67358, 0.60103] (m)
-C [3.7013, 0.38184, 0.78677] (m)
+| Stop | X-Axis (m) | Y-Axis (m) | Z-Axis (m) |
+| :--- | :---: | :---: | :---: |
+| **Point A** | 2.2227 | $0.0000$ | 0.7731 |
+| **Point B** | 3.9570 | -0.6736 | 0.6010 |
+| **Point C** | 3.7013 | 0.3818 | 0.7868 |
 
 
 The computed RMSE between the GT and the estimated stop points are:
