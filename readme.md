@@ -195,7 +195,7 @@ The rviz visualization of this scneario along with the transformation tested vs.
 
 | ros tf | our trans. matrix |
 | :---: | :---: |
-| <img src="./results/rostopic2.png" width="400" /> | <img src="./results/transfomation2.png" width="400" /> |
+| <img src="./results/rostopic2.png" width="400" /> | <img src="./results/our_tf.png" width="400" /> |
 
 
 ---

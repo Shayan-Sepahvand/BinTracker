@@ -62,41 +62,40 @@ def build_extrinsic(cam_h: float, tilt_rad: float):
     """
     Construct the extrinsics of the camera using the give fixed static tf.
     Returns:
-        The rotation matrix that transforms from camera to the spatial (world frame).
-        The rotation from the tilted camera {frame 2} to untilted camera {frame 1} is Rx,
-        The rotation from the untilted camera {frame 1} to the world frame {frame 0} is static here.
-        The rotation from the the tilted camera frame {frame 2} to the world frame {frame 0} is Rs @ Rx.
-        The world postion vector should be described w.r.t world frame, thus, Pworld = Rs @ Rx @ Pcam + t 
+        The homogenous transformation of the camera frame w.r.t the world frame
     """
-    # --- Axis mapping: camera -> world ---
-    Rs = np.array([
-        [ 0,  0,  1],   # world_X = cam_Z
-        [-1,  0,  0],   # world_Y = -cam_X
-        [ 0, -1,  0],   # world_Z = -cam_Y
+    # --- static pose 
+    Ts = np.array([
+        [ 0,  0,  1,  0],   
+        [-1,  0,  0,  0],      # cam_X = -world_Y
+        [ 0, -1,  0,  cam_h],  # cam_Y = -world_Z 
+        [ 0,  0,  0,  1]       # cam_Z = +world_X
     ], dtype=np.float64)
 
-    # --- Rotation in CAMERA frame (pitch around X) ---
-    c, s = np.cos(tilt_rad), np.sin(tilt_rad)
-    Rx = np.array([
-        [1,  0,  0],
-        [0,  c, -s],
-        [0,  s,  c],
+    # --- how can we rotate the camera so that it get backs to untilted pose
+    c, s = np.cos(-tilt_rad), np.sin(-tilt_rad)
+    Ttilt = np.array([
+        [1,  0,  0,  0],
+        [0,  c, -s,  0],
+        [0,  s,  c,  0],
+        [0,  0,  0,  1] 
     ], dtype=np.float64)
 
-    R = Rs @ Rx
-    t = np.array([0.0, 0.0, cam_h]) #this is the postion vec. that starts from the world and ends at the camera optical centre
-    T_homogeneous = np.eye(4)
-    T_homogeneous[:3, :3] = R
-    T_homogeneous[:3, 3] = t
-    # print(T_homogeneous)
-    return R, t
+    Tcam = Ts @ Ttilt
+    # Tcam
+    # the parent ----> world
+    # the child  ----> camera 
+    # print(Tcam)
+    return Tcam
 
-def cam_to_world(xyz_cam: np.ndarray, R: np.ndarray, t: np.ndarray) -> np.ndarray:
-    """
-    The world postion vector should be described w.r.t world frame, thus, Pworld = Rs @ Rx @ Pcam + t 
+def cam_to_world(xyz_cam: np.ndarray, Tcam: np.ndarray) -> np.ndarray:
+    Pcamh = np.append(xyz_cam, 1.0).reshape(4, 1)
+    Pworld_h = Tcam @ Pcamh
 
-    """
-    return R @ xyz_cam + t
+    # normalize homogeneous coordinate
+    Pworld = Pworld_h[:3] / Pworld_h[3]
+
+    return Pworld.flatten()
 
 
 # ── Detection ────────────────────────────────────────────────────────────────
@@ -522,7 +521,7 @@ def main():
 
     model = load_detector(args.gpu, args.weights)
     K, D, cam_h, tilt_rad = load_calib(args.calib)
-    R, t   = build_extrinsic(cam_h, tilt_rad)
+    Tcam   = build_extrinsic(cam_h, tilt_rad)
     wps = load_waypoints("./waypoints.json")
 
     kf = PositionKalman(dt=1/30) if args.kalman else None
@@ -592,7 +591,7 @@ def main():
                 cv2.imwrite(filename, frame)                # 2. Calculate 3D coordinates
                 xyz_cam = estimate_3d((x1, y1, x2, y2), K, D, BIN_HEIGHT_M)
                 x_c, y_c, z_c = xyz_cam
-                Pw = cam_to_world(xyz_cam, R, t)
+                Pw = cam_to_world(xyz_cam, Tcam)
 
                 # 3. Write formatted data to CSV
                 # frame_id:04d ensures the '0042' padding format
@@ -663,7 +662,7 @@ def main():
 
                 if frame_id == frame_wp:
                     xyz_cam = estimate_3d_wp(K, D, (u, v), xyz_cam_traj[-1][2])
-                    Pw_est = cam_to_world(xyz_cam, R, t)
+                    Pw_est = cam_to_world(xyz_cam, Tcam)
                     GT.append(Pw_est)
                     EST.append(Pw)
                     stop_positions.append(Pw_est)
