@@ -99,6 +99,7 @@ Furthermore, the bounding box coordinates are stored in the /results/1a.csv
 
 <img src="./results/inference_perf.png" alt="Bin Trajectory" width="500"/>
 
+---
 <!-- ---================================================================================================================== -->
 
 ## Question 1 - Part B: Occlusion continuity
@@ -114,10 +115,27 @@ The directory for the images after the execusion is /results/detection
 
 ## Question 1 - Part C: Model choice justification
 
-TBC.
+To evaluate the impact of our custom dataset and fine-tuning process, we compared the resulting model against the baseline pre-trained weights. The fine-tuned model demonstrates significant quantitative gains across all primary detection metrics.
+
+|### Performance Comparison
+
+| Metric | Baseline (Pre-trained) | Fine-Tuned (Ours) | Gain (Delta) |
+| :--- | :---: | :---: | :---: |
+| **Precision** | 0.671 | 0.865 | **+0.194** |
+| **Recall** | 0.550 | 0.852 | **+0.302** |
+| **mAP@0.5** | 0.655 | 0.904 | **+0.249** |
+| **mAP@0.5:0.95** | 0.410 | 0.655 | **+0.245** |
+
+
+The dataset is splited into %80 training and %20 validation. The follwoings are several examples of these image.
+
+| Early Training (Batch 2) | Late Training (Batch 408) |
+| :---: | :---: |
+| <img src="./results/train_batch2.jpg" width="400" /> | <img src="./results/train_batch408.jpg" width="400" /> |
+
 
 <!-- ---================================================================================================================== -->
-
+---
 ## Question 2 - Part A: Distance estimation from bounding box
 
 ```python
@@ -160,7 +178,7 @@ def build_extrinsic(cam_h: float, tilt_rad: float):
 Once the extrinsics are found, it is possible to reconstruct the world coordinates up to a scale due to as the camera projection is an affine transformation on the homogenous coordinates. Accordingly, the world coordinates are obtained up to a sclase using the following formulation:
 
 the first thing that happens in the pin-hole camera model.
-
+---
 <!-- ---================================================================================================================== -->
 
 ## Question 2 - Part B: position in camera frame
@@ -181,7 +199,7 @@ frame_id,timestamp_ms,x_cam,y_cam,z_cam,confidence
 0009,300,0.01,0.21,2.86,0.78
 0010,334,0.02,0.21,2.86,0.80
 ```
-
+---
 <!-- ---================================================================================================================== -->
 
 ## Question 2 - Part C: Transform to world frame
@@ -201,7 +219,7 @@ frame_id,t_ms,x_cam,y_cam,z_cam,x_world,y_world,z_world,conf
 0008,267,0.01,0.20,2.87,2.72,-0.01,0.41,0.85
 0009,300,0.01,0.21,2.86,2.71,-0.01,0.41,0.78
 ```
-
+---
 <!-- ---================================================================================================================== -->
 
 ## Question 2 - Part D: Error analysis vs. ground-truth waypoints
@@ -244,7 +262,7 @@ The computed RMSE between the GT and the estimated stop points are:
 =============================================
 ```
 
-
+---
 
 <!-- ---================================================================================================================== -->
 
@@ -268,7 +286,7 @@ frame [308] bin @ world (3.69, 0.49, 0.21) m conf=0.76 dt=145ms
 frame [309] bin @ world (3.71, 0.46, 0.21) m conf=0.77 dt=144ms
 
 ```
-
+---
 
 <!-- ---================================================================================================================== -->
 
@@ -301,13 +319,13 @@ Y (Left)        | 0.1090     | 0.1093     | -0.3%
 Z (Up)          | 0.0101     | 0.0052     | 48.6%
 =============================================
 ```
-
+---
 <!-- ---================================================================================================================== -->
 
 ## Question 3 - Part D: Edge deployment notes (Jetson Orin NX)
 
 TBC.
-
+---
 
 
 <!-- ---================================================================================================================== -->
