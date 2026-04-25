@@ -524,7 +524,7 @@ def main():
     kf = PositionKalman(dt=1/30) if args.kalman else None
 
     
-
+    
     trajectory = []
     trajectory_KF = []
     xyz_cam_traj = []

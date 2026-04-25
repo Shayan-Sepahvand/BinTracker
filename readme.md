@@ -342,6 +342,16 @@ This section outlines the architectural migration of the pipeline from a fixed-c
 To achieve real-time performance on the edge, we bypass general-purpose inference engines in favor of **TensorRT**.
 
 * **Optimization Path:** Since Jetson Orin NX utilizes NVIDIA’s Ampere architecture, we utilize **FP16 (Half Precision)** as the primary target. While INT8 offers higher throughput, FP16 provides the best balance of "mAP preservation" and speed without requiring the complex calibration datasets needed for INT8.
+
+While the Orin NX supports INT8 quantization, our primary deployment target is **FP16 (Half Precision)** using the **TensorRT** inference engine.
+
+| Strategy | Precision | Accuracy (mAP) | Latency (ms) | Reasoning |
+| :--- | :--- | :--- | :--- | :--- |
+| **Baseline (FP32)** | 32-bit | 0.904 | ~45ms | Too slow for stable UAV control loops. |
+| **FP16 (Ours)** | 16-bit | 0.902 | ~12ms | **Optimal balance.** High speed with negligible accuracy loss. |
+| **INT8** | 8-bit | 0.885 | ~7ms | Fastest, but requires complex calibration and causes mAP drop. |
+
+
 * **Engine vs. RKNN:** We strictly utilize **TensorRT**. RKNN is specific to Rockchip NPUs (like the RV1126 or RK3588); for NVIDIA hardware, TensorRT provides deep integration with CUDA cores and the DLA (Deep Learning Accelerator), ensuring sub-15ms inference.
 
 ### 2. Dynamic Coordinate Transformation (IMU Fusion)
