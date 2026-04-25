@@ -101,8 +101,8 @@ These augmentations were critical for improving detection consistency under chal
 | Metric                     | Value                          |
 |--------------------------|-------------------------------|
 | Detection Rate           | 95.20%                        |
-| Inference Time (GPU)     | 5.10 ms                       |
-| Inference Time (CPU)     | 130.36 ms                        |
+| Inference Time (GPU)     | 5-7 ms                       |
+| Inference Time (CPU)     | 130-160 ms                        |
 | IoU (vs Ground Truth)    | Seems OK (NO GT Provided) |
 
  
@@ -375,4 +375,4 @@ To maintain a stable flight control loop, the "Photon-to-Actuator" latency must 
 
 ## Demo screen recording
 
-TBC.
+This is shared directly and not commited as per request.
