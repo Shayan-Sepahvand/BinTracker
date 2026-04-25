@@ -292,6 +292,21 @@ def plot_world_trajectory(world_traj, stop_positions, save_path="trajectory.png"
     if stop_positions.size > 0:
         plt.scatter(stop_positions[:, 0], stop_positions[:, 1],
                     c='orange', s=120, marker='x', label="Stops")
+        
+        # Add alphabetical labels ('a', 'b', 'c', ...) to each stop point
+        for i, stop in enumerate(stop_positions):
+            # Generates 'a' for index 0, 'b' for 1, 'c' for 2, etc.
+            letter = chr(ord('a') + i) 
+            
+            plt.annotate(
+                letter, 
+                (stop[0], stop[1]),           # Target the x, y coordinates
+                textcoords="offset points",   # Offset the text from the point
+                xytext=(8, 8),                # Shift 8 pixels right, 8 pixels up
+                fontsize=12,
+                fontweight='bold',
+                color='black'
+            )
 
     plt.xlabel("World X (m)")
     plt.ylabel("World Y (m)")
@@ -302,7 +317,6 @@ def plot_world_trajectory(world_traj, stop_positions, save_path="trajectory.png"
 
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close()
-
 
 
 def rmse_per_point(A: np.ndarray, B: np.ndarray) -> np.ndarray:
@@ -612,7 +626,7 @@ def main():
 
                 # --- STDOUT (REQUIRED FORMAT) ---
                 print(
-                    f"[{frame_id:03d}] bin @ world "
+                    f"frame [{frame_id:03d}] bin @ world "
                     f"({Pw[0]:.2f}, {Pw[1]:.2f}, {Pw[2]:.2f}) m "
                     f"conf={conf:.2f} dt={dt_ms}ms",
                     flush=True
@@ -630,7 +644,7 @@ def main():
 
                 last_age +=1
                 print(
-                    f"[{frame_id:03d}] OCCLUDED - last known"
+                    f"frame [{frame_id:03d}] OCCLUDED - last known "
                     f"({trajectory[-1][0]:.2f}, {trajectory[-1][1]:.2f}, {trajectory[-1][2]:.2f}) m "
                     f" age={last_age}fr",
                     flush=True
@@ -651,7 +665,6 @@ def main():
                     stop_positions.append(Pw_est)
             # end of 2d ============================================
 
-
             frame_id += 1
 
         cap.release()
@@ -668,7 +681,6 @@ def main():
     print("=" * 45)
     print(f"[run.sh] RMSE per axis: x={RMSE[0]:.2f}, y={RMSE[1]:.2f}, z={RMSE[2]:.2f}")
     print("=" * 45)
-
     if inference_times:
         plot_inference_performance(inference_times, args)
 

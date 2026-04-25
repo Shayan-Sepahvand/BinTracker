@@ -4,33 +4,56 @@
 # ./run.sh input.mp4 calib.json results --gpu
 
 # --- parse args -------------------------------------------------------------
-VIDEO="$1"
-CALIB="$2"
-OUT_DIR="$3"      
+# 1. Set default values
+VIDEO=""
+CALIB=""
+OUT_DIR="results" # Default fallback if not provided
 GPU_FLAG=""
 KALMAN_FLAG=""
 
-for arg in "$@"; do
-  case $arg in
-    --gpu) GPU_FLAG="--gpu" ;;
-    --kalman) KALMAN_FLAG="--kalman" ;;
+# 2. Parse arguments correctly
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --video) 
+      VIDEO="$2"   # Grab the actual filename (e.g., input.mp4)
+      shift 2      # Shift past both the flag and the filename
+      ;;
+    --calib) 
+      CALIB="$2"   # Grab the actual filename (e.g., calib.json)
+      shift 2      # Shift past both the flag and the filename
+      ;;
+    --out)
+      OUT_DIR="$2" # Grab the output directory
+      shift 2
+      ;;
+    --gpu) 
+      GPU_FLAG="--gpu" # This is just a toggle flag, no value needed
+      shift 1          # Shift past the flag only
+      ;;
+    --kalman) 
+      KALMAN_FLAG="--kalman"
+      shift 1
+      ;;
+    *) 
+      echo "Unknown parameter passed: $1"
+      exit 1
+      ;;
   esac
 done
 
 # --- environment setup -------------------------------------------------------
-echo "[run.sh] Setting up Python virtual environment..."
+echo "[run.sh] Setting up Python virtual environment (pyenv and python 3.10 must have been installed)..."
 
 # # 1. Force the script to recognize pyenv
-# export PATH="$HOME/.pyenv/bin:$PATH"
-# eval "$(pyenv init -)"
-# eval "$(pyenv virtualenv-init -)" # Only if you use pyenv-virtualenv
+export PATH="$HOME/.pyenv/bin:$PATH"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)" # Only if you use pyenv-virtualenv
 
 # 2. Tell pyenv to use 3.10.14 for this script
-pyenv shell 3.10.14
+pyenv shell 3.10
 
 if [ ! -d ".venv" ]; then
     echo "[run.sh] Creating new virtual environment with Python 3.10..."
-    # USE 'python' HERE, NOT 'python3.10'
     python -m venv .venv
 fi
 
@@ -38,6 +61,7 @@ fi
 source .venv/bin/activate
 
 echo "[run.sh] Installing Python dependencies..."
+pip install -q --upgrade pip
 pip install -q -r requirements.txt
 
 

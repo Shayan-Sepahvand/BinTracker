@@ -3,7 +3,7 @@ dumpster_dataset
 .venv
 venv
 runs
-results
+results/detections
 Skyscouter_CV_Assessment_v2.pdf
 Input sample.mp4
 input.mp4
