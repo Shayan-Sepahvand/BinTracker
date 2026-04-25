@@ -186,10 +186,21 @@ def build_extrinsic(cam_h: float, tilt_rad: float):
 ```
 
 
-Once the extrinsics are found, it is possible to reconstruct the world coordinates up to a scale due to as the camera projection is an affine transformation on the homogenous coordinates. Accordingly, the world coordinates are obtained up to a sclase using the following formulation:
+Once the extrinsics are found, it is possible to reconstruct the world coordinates up to a scale due to as the camera projection is an affine transformation on the homogenous coordinates. 
 
-the first thing that happens in the pin-hole camera model.
+The rviz visualization of this scneario along with the transformation tested vs. ros tf tree yields the followings:
+
+
+<img src="./results/rviz_transformations.png" width="400" />
+
+| ros tf | our trans. matrix |
+| :---: | :---: |
+| <img src="./results/rostopic2.png" width="400" /> | <img src="./results/transfomation2.png" width="400" /> |
+
+
 ---
+
+
 <!-- ---================================================================================================================== -->
 
 ## Question 2 - Part B: position in camera frame
