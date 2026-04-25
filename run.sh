@@ -1,14 +1,12 @@
 #!/bin/bash
 
 
-# ./run.sh input.mp4 calib.json results weights --gpu
+# ./run.sh input.mp4 calib.json results --gpu
 
 # --- parse args -------------------------------------------------------------
 VIDEO="$1"
 CALIB="$2"
 OUT_DIR="$3"      
-# Note: $4 is ignored now because we download weights automatically
-
 GPU_FLAG=""
 KALMAN_FLAG=""
 
@@ -22,15 +20,26 @@ done
 # --- environment setup -------------------------------------------------------
 echo "[run.sh] Setting up Python virtual environment..."
 
+# # 1. Force the script to recognize pyenv
+# export PATH="$HOME/.pyenv/bin:$PATH"
+# eval "$(pyenv init -)"
+# eval "$(pyenv virtualenv-init -)" # Only if you use pyenv-virtualenv
+
+# 2. Tell pyenv to use 3.10.14 for this script
+pyenv shell 3.10.14
+
 if [ ! -d ".venv" ]; then
     echo "[run.sh] Creating new virtual environment with Python 3.10..."
-    python3.10 -m venv .venv
+    # USE 'python' HERE, NOT 'python3.10'
+    python -m venv .venv
 fi
 
+# 3. Activate the environment
 source .venv/bin/activate
 
 echo "[run.sh] Installing Python dependencies..."
 pip install -q -r requirements.txt
+
 
 # --- Weights Management ------------------------------------------------------
 # FIX: Explicitly define the weights directory name
@@ -74,52 +83,3 @@ python track_bin.py \
   --weights "$WEIGHTS_FILE" \
   $GPU_FLAG \
   $KALMAN_FLAG
-
-
-
-
-
-# #!/usr/bin/env bash
-# # =============================================================================
-# # Skyscouter – CV Engineer Assessment
-# # Entry point. Run as: bash run.sh --video input.mp4 --calib calib.json
-# # Add --gpu flag to enable GPU inference (document GPU specs in README).
-# # =============================================================================
-# set -e
-# ``
-# # --- parse arguments ---------------------------------------------------------
-# VIDEO=""
-# CALIB=""
-# GPU_FLAG=""
-# KALMAN_FLAG=""
-
-# while [[ $# -gt 0 ]]; do
-#   case $1 in
-#     --video)   VIDEO="$2";       shift 2 ;;
-#     --calib)   CALIB="$2";       shift 2 ;;
-#     --gpu)     GPU_FLAG="--gpu"; shift   ;;
-#     --kalman)  KALMAN_FLAG="--kalman"; shift ;;
-#     *)         echo "Unknown argument: $1"; exit 1 ;;
-#   esac
-# done
-
-# if [[ -z "$VIDEO" || -z "$CALIB" ]]; then
-#   echo "Usage: bash run.sh --video <path> --calib <path> [--gpu] [--kalman]"
-#   exit 1
-# fi
-
-
-
-# # --- run pipeline ------------------------------------------------------------
-# echo "[run.sh] Starting tracker..."
-# echo "[run.sh] Video : $VIDEO"
-# echo "[run.sh] Calib : $CALIB"
-# [[ -n "$GPU_FLAG"    ]] && echo "[run.sh] Mode  : GPU"    || echo "[run.sh] Mode  : CPU"
-# [[ -n "$KALMAN_FLAG" ]] && echo "[run.sh] Kalman: enabled" || echo "[run.sh] Kalman: disabled"
-# echo ""
-
-# python track_bin.py \
-#   --video  "$VIDEO"  \
-#   --calib  "$CALIB"  \
-#   $GPU_FLAG          \
-#   $KALMAN_FLAG

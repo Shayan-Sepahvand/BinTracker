@@ -1,85 +1,140 @@
 
-Question (1) - Part (a)
+# Pre-requisits
+# 🚀 CUDA-Based Project
 
-Question 1 - Part A: Model Selection and Motivation
-Enhanced Version:
-For this task, I utilized the YOLOv10 architecture. The motivation behind this choice is its state-of-the-art balance between inference speed and accuracy, specifically its "NMS-free" training which reduces latency.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10+-blue.svg">
+  <img src="https://img.shields.io/badge/Ubuntu-20.04-orange.svg">
+  <img src="https://img.shields.io/badge/CUDA-12.4-green.svg">
+  <img src="https://img.shields.io/badge/GPU-RTX%203060-76B900.svg">
+  <img src="https://img.shields.io/badge/License-MIT-lightgrey.svg">
+</p>
 
-During initial testing, I observed that the pre-trained COCO weights frequently misclassified the garbage bin as a "person" (Class ID 0) or ignored it entirely. To resolve this, I performed fine-tuning on a targeted dataset. My objective was to move beyond generic detection and specifically account for environmental factors present in the test data, such as motion blur, partial occlusion by workers, and significant scale variations.
+---
 
-I selected the [Insert Dataset Name Here] public industrial dumpster dataset because its imagery closely mirrors the target environment and provides sufficient volume for convergence. To improve model robustness, I implemented a data augmentation pipeline focusing on:
+## 📖 Overview
 
-Spatial Augmentation: Scaling and translation to handle varying camera distances.
+This repository contains the implementation for the assignment.  
+It is designed to run on GPU-accelerated systems using CUDA and provides a reproducible environment for experimentation.
 
-Occlusion Modeling: Introducing random erasing to simulate bins partially blocked by personnel or equipment.
+---
 
-The efficacy of this approach is demonstrated in the processed output video, where the tracking remains consistent and the bounding box remains stable despite the challenging conditions.
+## ⚙️ Requirements
 
-For the inference time the average and the time are plotted in RES/inference_perf.png which shows and average around 7ms<90ms
+| Component        | Version / Details              |
+|-----------------|------------------------------|
+| OS              | Ubuntu 20.04                |
+| Python          | 3.10+                       |
+| CUDA Toolkit    | 12.4                        |
+| NVIDIA Driver   | 570+                        |
+| GPU             | NVIDIA RTX 3060 (12GB VRAM) |
 
-A gpu with the following specification including model, driver, VRAM, and the CUDA version are used to complete this assignment:
 
-```bash
-nvcc --version
-nvcc: NVIDIA (R) Cuda compiler driver
-Copyright (c) 2005-2024 NVIDIA Corporation
-Built on Thu_Mar_28_02:18:24_PDT_2024
-Cuda compilation tools, release 12.4, V12.4.131
-Build cuda_12.4.r12.4/compiler.34097967_0
+---
+
+## Question (1) - Part (a): Model Selection and Motivation
+
+For this task, I selected the YOLOv10 architecture due to its strong balance between detection accuracy and real-time inference performance. A key advantage of YOLOv10 is its NMS-free training paradigm, which reduces post-processing overhead and leads to lower latency—critical for meeting the <100 ms/frame constraint. Initial experiments were conducted using COCO-pretrained weights, which include a rash can class. However, these models did not generalize well to the provided video. Specifically:
+
+- The garbage bin was frequently misclassified as a "person" (Class ID 0)
+- In several frames, the bin was not detected at all, particularly under:
+  - Motion blur  
+  - Partial occlusion (e.g., workers in front of the bin)  
+  - Scale variations due to change in the distance from the optical center 
+
+Given these limitations, I opted to ine-tune the model on a more relevant dataset. I used a public dataset Google Open Images v7 collected from the that closely matches the visual characteristics of the target environment. The "Waste container" class detections serves as the lables. This dataset provides:
+
+- Real-world industrial settings  
+- Similar lighting and background clutter  
+- Adequate sample diversity for robust training  
+
+To improve generalization and robustness, I applied the following techniques:
+
+- **Spatial Augmentation**
+  - Random scaling and translation which required attention on not to overscale the object.
+  - Simulates varying camera distances and viewpoints  
+
+- **Occlusion Modeling**
+  - Random erasing / cutout  
+  - Mimics real-world occlusions from workers or equipment  
+
+- **Iterlative Learning**
+  - The model has been trained several time in a consequtive manner, each time the wieghts of the previously trained model are used as the initial weights. 
+
+
+These augmentations were critical for improving detection consistency under challenging conditions. Authors interested more details of the training.
+
+### 📊 Performance Criteria
+
+| Metric                     | Value                          |
+|--------------------------|-------------------------------|
+| Detection Rate           | 95.20%                        |
+| Inference Time (GPU)     | 5.10 ms                       |
+| Inference Time (CPU)     | 130.36 ms                        |
+| IoU (vs Ground Truth)    | Seems OK (NO GT Provided) |
+
+ 
+Furthermore, the bounding box coordinates are stored in the /results/1a.csv
+<!-- ---================================================================================================================== -->
+
+## Question 1 - Part B: Occlusion continuity
+
+The detection images are included in the results directory. As appears in the following figures, the detection is maintained in presence of partial occlusion. 
+This is thanks to the reach training dataset that included augemented partially occluded images.
+
+The directory for the images after the execusion is /results/detection
+
+<!-- ---================================================================================================================== -->
+
+---
+
+## Question 1 - Part C: Model choice justification
+
+Include the training graphs here. 
+
+<!-- ---================================================================================================================== -->
+
+## Question 2 - Part A: Distance estimation from bounding box
+
+```python
+def build_extrinsic(cam_h: float, tilt_rad: float):
+
+    """
+    Construct the extrinsics of the camera using the give fixed static tf.
+    Returns:
+      R and t
+    """
+    # --- Axis mapping: camera -> world ---
+    # each of the columns is the result of the projection of the camera axis on the world coordinates, e.g. the camera x axis lies on the world -y axis.
+    Rs = np.array([
+        [ 0,  0,  1],   # world_X = cam_Z
+        [-1,  0,  0],   # world_Y = -cam_X
+        [ 0, -1,  0],   # world_Z = -cam_Y
+    ], dtype=np.float64)
+
+
+    # --- This is a basic roation around the camera local x-axis, which is given to be -15 degrees. 
+    c, s = np.cos(tilt_rad), np.sin(tilt_rad)
+    Rx = np.array([
+        [1,  0,  0],
+        [0,  c, -s],
+        [0,  s,  c],
+    ], dtype=np.float64)
+
+    # The rotation matrix that transforms from camera to the spatial (world frame).
+    # The rotation from the tilted camera {frame 2} to untilted camera {frame 1} is Rx,
+    # The rotation from the untilted camera {frame 1} to the world frame {frame 0} is static here.
+    # The rotation from the the tilted camera frame {frame 2} to the world frame {frame 0} is Rs @ Rx.
+    # The world postion vector should be described w.r.t world frame, thus, Pworld = Rs @ Rx @ Pcam + t 
+    R = Rs @ Rx
+    t = np.array([0.0, 0.0, cam_h]) #this is the postion vec. that starts from the world and ends at the camera optical centre
+
+    return R, t
 ```
-```bash
-nvidia-smi
-Fri Apr 24 10:32:58 2026       
-+-----------------------------------------------------------------------------------------+
-| NVIDIA-SMI 570.124.06             Driver Version: 570.124.06     CUDA Version: 12.8     |
-|-----------------------------------------+------------------------+----------------------+
-| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
-| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
-|                                         |                        |               MIG M. |
-|=========================================+========================+======================|
-|   0  NVIDIA GeForce RTX 3060        Off |   00000000:0B:00.0  On |                  N/A |
-|  0%   46C    P8             13W /  170W |     604MiB /  12288MiB |      0%      Default |
-|                                         |                        |                  N/A |
-+-----------------------------------------+------------------------+----------------------+
-```
 
 
+Once the extrinsics are found, it is possible to reconstruct the world coordinates up to a scale due to as the camera projection is an affine transformation on the homogenous coordinates. Accordingly, the world coordinates are obtained up to a sclase using the following formulation:
 
+the first thing that happens in the pin-hole camera model.
 
-
-
-
-
-
-
-
-
-
-
-
-Question 1 - Part B: Training Strategy and Implementation
-Enhanced Version:
-The core strategy involved enriching the training distribution through heavy geometric and occlusion-based augmentations. This ensures the model generalizes well to "edge cases" where the bin is partially off-screen or obscured.
-
-The training was configured as follows:
-
-results = model.train(
-    data="./dumpster_dataset/dataset.yaml", 
-    epochs=30,          
-    imgsz=640,          
-    batch=20,           
-    workers=1,        
-    cache=False,      
-    
-    # --- OCCLUSION & BOUNDARY ROBUSTNESS ---
-    erasing=0.4,        # Randomly masks parts of the image to simulate occlusions.
-    mosaic=1.0,         # Combines 4 images into one to help the model learn small-scale objects.
-    box=10.0,           # Increases the weight of the box loss for more precise coordinates.
-    
-    # --- SCALE & POSITION ROBUSTNESS ---
-    scale=0.5,          # Randomly scales images by ±50% to handle varying camera-to-bin distances.
-    translate=0.4,      # Shifts the image by 40% to handle bins partially cut off at the frame edges.
-    
-    device=0,
-    name="dumpster_model_v2"
-)
+<!-- ---================================================================================================================== -->

@@ -6,6 +6,7 @@ import torch
 
 import fiftyone as fo
 import fiftyone.zoo as foz
+import fiftyone.utils.random as foor
 
 # 1. Download the dataset
 dataset = foz.load_zoo_dataset(
@@ -17,7 +18,6 @@ dataset = foz.load_zoo_dataset(
 )
 
 # 2. Split the local dataset: 80% for training, 20% for validation
-import fiftyone.utils.random as foor
 foor.random_split(dataset, {"train": 0.8, "val": 0.2})
 
 # 3. Export with the split

@@ -107,6 +107,8 @@ def load_detector(use_gpu: bool = True, wights_path: str = None):
     model = YOLO(wights_path) 
     if use_gpu:
         model.to("cuda")
+    else:
+        model.to("cpu")
     return model
 
 
@@ -141,7 +143,7 @@ def plot_inference_performance(times, args):
     """
     plt.figure(figsize=(10, 5))
     plt.plot(times[1:], label='Inference Time (ms)', color='blue', linewidth=1)
-    avg_time = sum(times) / len(times)
+    avg_time = sum(times[1:]) / len(times)
     plt.axhline(y=avg_time, color='red', linestyle='--', label=f'Avg: {avg_time:.2f}ms')
     plt.title('YOLOv10 Inference Performance')
     plt.xlabel('Frame Number')
@@ -149,7 +151,7 @@ def plot_inference_performance(times, args):
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.savefig(os.path.join(args.output, "inference_perf.png"))
-    print(f"[run.sh] Performance plot saved to {args.output}/inference_time_ms.png")
+    # print(f"[run.sh] Performance plot saved to {args.output}/inference_time_ms.png")
 
 
 def draw_bounding_box(frame, x1, y1, x2, y2, conf):
@@ -251,7 +253,6 @@ def estimate_3d_wp(K, D, waypoint, Z_frame):
     
     return np.array([X, Y, Z_frame])
 
-# ── World Trajecotry Plotter ───────────────────────────────────────────────────
 
 def plot_world_trajectory(world_traj, stop_positions, save_path="trajectory.png"):
     """
@@ -301,6 +302,29 @@ def plot_world_trajectory(world_traj, stop_positions, save_path="trajectory.png"
 
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close()
+
+
+
+def rmse_per_point(A: np.ndarray, B: np.ndarray) -> np.ndarray:
+    """
+    Compute RMSE (Euclidean error) for each corresponding 3D point.
+
+    Args:
+        A: (N, 3) array of ground truth points
+        B: (N, 3) array of estimated points
+
+    Returns:
+        errors: (N,) array where each entry is RMSE for that point
+    """
+    if A.shape != B.shape:
+        raise ValueError("Input arrays must have the same shape")
+    if A.shape[1] != 3:
+        raise ValueError("Each point must be 3D")
+
+    diff = A - B                      # (N, 3)
+    errors = np.sqrt(np.mean(diff**2, axis=1))  # RMSE per point
+
+    return errors
 
 # ── Optional: Kalman filter ───────────────────────────────────────────────────
 
@@ -486,25 +510,28 @@ def main():
     kf = PositionKalman(dt=1/30) if args.kalman else None
 
     
-    os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
 
     trajectory = []
     trajectory_KF = []
+    xyz_cam_traj = []
     stop_positions = []
     GT = []
     EST = []
     inference_times = []
-    last_known = None
     last_age   = 0
+    no_missed_fr = 0
 
     cap = cv2.VideoCapture(args.video)
-    save_path = os.path.join(args.output, "detection_results")
+    save_path = os.path.join(args.output)
+    save_path_detected_imgs = os.path.join(args.output, "./detections")
     os.makedirs(save_path, exist_ok=True)
+    os.makedirs(save_path_detected_imgs, exist_ok=True)
+
     if not cap.isOpened():
         raise RuntimeError(f"Cannot open video: {args.video}")
 
     # Create the full path: e.g., "results/output.csv"
-    csv_px_path = os.path.join(args.output, "1.csv")
+    csv_px_path = os.path.join(args.output, "1a.csv")
     csv_path = os.path.join(args.output, "2b.csv")
     csv_world_path = os.path.join(args.output, "2c.csv")
     # 1. Open CSV using the csv module for cleaner formatting
@@ -540,12 +567,15 @@ def main():
             if det is not None:
                 last_age = 0 #reset the number of cons. missed frames
                 x1, y1, x2, y2, conf = det
+
                 frame = draw_bounding_box(frame, x1, y1, x2, y2, conf)
 
-                # 2. Calculate 3D coordinates
+                filename = os.path.join(save_path_detected_imgs, f"frame_{frame_id:05d}.png")
+                cv2.imwrite(filename, frame)                # 2. Calculate 3D coordinates
                 xyz_cam = estimate_3d((x1, y1, x2, y2), K, D, BIN_HEIGHT_M)
                 x_c, y_c, z_c = xyz_cam
-                
+                Pw = cam_to_world(xyz_cam, R, t)
+
                 # 3. Write formatted data to CSV
                 # frame_id:04d ensures the '0042' padding format
 
@@ -567,7 +597,6 @@ def main():
                     f"{conf:.2f}"
                 ])
 
-                Pw = cam_to_world(xyz_cam, R, t)
                 # --- Write WORLD CSV ---
                 writer_world.writerow([
                     f"{frame_id:04d}",
@@ -594,25 +623,11 @@ def main():
                     trajectory_KF.append(filtered)
 
                 trajectory.append(Pw)
-
-                # Optional: console log to track progress
-                # 2d ============================================
-                for i in range(len(wps)):
-                    u = wps[i, 0]
-                    v = wps[i, 1]
-                    frame_wp = int(wps[i, 3])  # <-- correct column now
-
-                    if frame_id == frame_wp:
-                        # print(frame_wp)
-
-                        xyz_cam = estimate_3d_wp(K, D, (u, v), z_c)
-                        Pw_est = cam_to_world(xyz_cam, R, t)
-
-                        GT.append(Pw_est)
-                        EST.append(Pw)
-                        stop_positions.append(Pw_est)
+                xyz_cam_traj.append(xyz_cam)
 
             else:
+                no_missed_fr += 1
+
                 last_age +=1
                 print(
                     f"[{frame_id:03d}] OCCLUDED - last known"
@@ -622,20 +637,38 @@ def main():
                 )
 
 
+            # 2d ============================================
+            for i in range(len(wps)):
+                u = wps[i, 0]
+                v = wps[i, 1]
+                frame_wp = int(wps[i, 3])  # <-- correct column now
+
+                if frame_id == frame_wp:
+                    xyz_cam = estimate_3d_wp(K, D, (u, v), xyz_cam_traj[-1][2])
+                    Pw_est = cam_to_world(xyz_cam, R, t)
+                    GT.append(Pw_est)
+                    EST.append(Pw)
+                    stop_positions.append(Pw_est)
+            # end of 2d ============================================
+
+
             frame_id += 1
 
         cap.release()
 
 
-    gt_arr = np.array(GT)
-    est_arr = np.array(EST)
 
-    differences = gt_arr - est_arr
-    squared_differences = differences**2
-    mse = np.mean(squared_differences, axis=0)
-    rmse = np.sqrt(mse)
-    print(rmse)
-    # Call the function
+    # 5. Print out the formatted report
+    print("=" * 45)
+    detection_rate = 100 * (1 - no_missed_fr / frame_id)
+    print(f"[run.sh] Detection Rate is {detection_rate:.2f}%.")
+    print("=" * 45)
+
+    RMSE = rmse_per_point(np.array(GT), np.array(EST))
+    print("=" * 45)
+    print(f"[run.sh] RMSE per axis: x={RMSE[0]:.2f}, y={RMSE[1]:.2f}, z={RMSE[2]:.2f}")
+    print("=" * 45)
+
     if inference_times:
         plot_inference_performance(inference_times, args)
 
@@ -645,10 +678,6 @@ def main():
         kf.plot_raw_vs_filtered_position(trajectory, trajectory_KF)
         kf.quantify_jitter_reduction(trajectory, trajectory_KF, 250, 280)
     # end of 2d ============================================
-
-
-
-
 
 
 
