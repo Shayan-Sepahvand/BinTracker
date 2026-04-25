@@ -85,7 +85,10 @@ def build_extrinsic(cam_h: float, tilt_rad: float):
 
     R = Rs @ Rx
     t = np.array([0.0, 0.0, cam_h]) #this is the postion vec. that starts from the world and ends at the camera optical centre
-
+    T_homogeneous = np.eye(4)
+    T_homogeneous[:3, :3] = R
+    T_homogeneous[:3, 3] = t
+    # print(T_homogeneous)
     return R, t
 
 def cam_to_world(xyz_cam: np.ndarray, R: np.ndarray, t: np.ndarray) -> np.ndarray:
@@ -179,6 +182,7 @@ def estimate_3d(bbox, K, D, bin_height_m=0.65):
     # 1. Depth (Z) calculation
     # Derived from: Z = (fy * Real_Height) / Pixel_Height
     Z = (fy * bin_height_m) / h_px
+    Z = Z + (BIN_DIAMETER_M/2) 
 
     # 2. Convert pixel to normalized distorted coordinates
     x_d = (u_dist - cx) / fx
@@ -573,11 +577,11 @@ def main():
             if kf is not None:
                 predicted_pos = kf.predict()
             start_inf = time.perf_counter()
+            # print(frame)
             det = detect_bin(frame, model) # Single detection call
             end_inf = time.perf_counter()
             dt_ms = int((end_inf - start_inf) * 1000)
             inference_times.append((dt_ms))
-
             if det is not None:
                 last_age = 0 #reset the number of cons. missed frames
                 x1, y1, x2, y2, conf = det
