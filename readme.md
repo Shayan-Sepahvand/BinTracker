@@ -2,7 +2,7 @@
 # 🚀AI-Enabled Industrial Bin Detection and Trajectory Construction
 
 
-# Pre-requisits
+## Pre-requisits
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10+-blue.svg">
@@ -16,8 +16,13 @@
 
 ## 📖 Overview
 
-This repository contains the implementation for the assignment.  
-It is designed to run on GPU-accelerated systems using CUDA and provides a reproducible environment for experimentation.
+This project implements a computer vision pipeline to detect and track industrial waste containers using YOLOv10. By combining 2D object detection with camera intrinsics and the bin's known physical dimensions, the system accurately estimates the full 3D spatial trajectory of the container.
+
+---
+
+## 📖 Overview
+
+This project implements a computer vision pipeline to detect and track industrial waste containers using YOLOv10. By combining 2D object detection with camera intrinsics and the bin's known physical dimensions, the system accurately estimates the full 3D spatial trajectory of the container.
 
 ---
 
@@ -26,38 +31,30 @@ It is designed to run on GPU-accelerated systems using CUDA and provides a repro
 | Component       | Version / Details           |
 |-----------------|-----------------------------|
 | OS              | Ubuntu 20.04                |
-| Python          | 3.10.14                     |
+| Python (pyenv)  | 3.10.14                     |
 | CUDA Toolkit    | 12.4                        |
 | NVIDIA Driver   | 570+                        |
 | GPU             | NVIDIA RTX 3060 (12GB VRAM) |
 
+> **IMPORTANT NOTE:** This package requires an isolated Python environment via `pyenv`. 
 
+If you do not have `pyenv` installed, we recommend the following installation steps:
 
-***IMPORTANT NOTE***: This package requires virutual python via pyenv installation. The following is recommended:
-
+**1. Install build dependencies and `pyenv`:**
 ```bash
 sudo apt update
 sudo apt install -y make build-essential libssl-dev zlib1g-dev \
 libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
-libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python3-openssl git
-curl https://pyenv.run | bash
-echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-echo 'eval "$(pyenv init -)"' >> ~/.bashrc
-```
-restart the termianl
+libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev git
 
-```bash
-pyenv install 3.10.14
-sudo apt install -y python3-venv
-```
+curl [https://pyenv.run](https://pyenv.run) | bash
 
 ---
 
 ## ⚙️ How to run
 
 ```bash
-./run.sh --video input.mp4 --calib calib.json --gpu --kalman
+ ./run.sh --video input.mp4 --calib calib.json --kalman --gpu
 ```
 ---
 
@@ -112,10 +109,31 @@ Furthermore, the bounding box coordinates are stored in the /results/1a.csv
 
 ## Question 1 - Part B: Occlusion continuity
 
-The detection images are included in the results directory. As appears in the following figures, the detection is maintained in presence of partial occlusion. 
-This is thanks to the reach training dataset that included augemented partially occluded images.
+The detection images are included in the results directory. As shown in the following figures, detection is successfully maintained even in the presence of partial occlusion. This is thanks to the rich training dataset, which included augmented, partially occluded images.
 
-The directory for the images after the execusion is /results/detection
+The directory for the images after execution is: /results/detection
+
+```python
+
+results = model.train(
+    data="./dumpster_dataset/dataset.yaml", 
+    epochs=30,          
+    imgsz=640,          
+    batch=20,           
+    workers=4,          # Increase this if your CPU has more cores (usually 4 is safe)
+    cache=False,      
+    
+    # --- Augmentations ---
+    erasing=0.4,        
+    mosaic=1.0,         
+    box=10.0,           
+    scale=0.5,          
+    translate=0.4,      
+    
+    device=0,
+    name="dumpster_model_v2"
+)
+```
 
 <!-- ---================================================================================================================== -->
 
@@ -146,17 +164,15 @@ The dataset is splited into %80 training and %20 validation. The follwoings are 
 ---
 ## Question 2 - Part A: Distance estimation from bounding box
 
+Once the camera extrinsics are established, 3D world coordinates can be reconstructed up to a scale factor, since the camera projection acts as a transformation on homogeneous coordinates. 
 
-Once the extrinsics are found, it is possible to reconstruct the world coordinates up to a scale due to as the camera projection is an affine transformation on the homogenous coordinates. 
-
-The rviz visualization of this scneario along with the transformation tested vs. ros tf tree yields the followings:
-
+The RViz visualization of this scenario, alongside a comparison between our calculated transformation matrix and the ROS TF tree, yields the following results:
 
 <img src="./results/rviz_transformations.png" width="400" />
 
-| ros tf | our trans. matrix |
+| ROS TF Tree | Our Transformation Matrix |
 | :---: | :---: |
-| <img src="./results/rostopic2.png" width="400" /> | <img src="./results/our_tf.png" width="400" /> |
+| <img src="./results/rostopic.png" width="400" /> | <img src="./results/our_tf.png" width="400" /> |
 
 
 ---
@@ -164,7 +180,7 @@ The rviz visualization of this scneario along with the transformation tested vs.
 
 ## Question 2 - Part B: position in camera frame
 
-The requested file can be found in the following directory after the execution: /resutls/2b.csv. Here are some examples of the output.
+The dataset was partitioned into an 80% training set and a 20% validation set. Several examples from the dataset are provided below:
 
 ```csv
 frame_id,timestamp_ms,x_cam,y_cam,z_cam,confidence
@@ -181,6 +197,7 @@ frame_id,timestamp_ms,x_cam,y_cam,z_cam,confidence
 0010,334,0.02,0.21,3.02,0.80
 ```
 
+The theoretical justification of the code can be found in the following figures:
 
 <img src="./results/justification3.png" alt="Proof" width="500"/>
 <img src="./results/justification4.png" alt="Proof" width="500"/>
@@ -284,17 +301,31 @@ A top-down view of the bin trajecory in the world frame along with the three sto
 
 <img src="./results/trajectory.png" alt="Bin Trajectory" width="500"/>
 
-
+---
 <!-- ---================================================================================================================== -->
 
-## Question 3 - Part C: Kalman filter smoothing
+## Question 3: Kalman Filter Formulation and Jitter Reduction
 
-The state vector includes the the [x y z vx vy vz], yet the observation vector is limited to the postiion.The xyz positino graph of the measured vs the filtered signals  are illustrated in the follwoing figure. 
+To track the container smoothly through time, a Kalman Filter is implemented. Rather than just relying on the raw spatial coordinates from the camera pipeline, the filter uses an internal kinematic model to predict and correct the bin's trajectory.
+
+### State Vector and Key Parameters
+
+* **State Vector ($X$):** The filter models the system using a 6-dimensional state vector, $X = [x, y, z, v_x, v_y, v_z]^T$. This tracks both the 3D spatial position ($x, y, z$) and the 3D velocity ($v_x, v_y, v_z$) of the container. 
+* **Observation Vector ($Z$):** Because our 2D-to-3D projection pipeline only outputs spatial coordinates, our measurement vector is strictly limited to position: $Z = [x, y, z]^T$.
+* **State Transition Matrix ($F$ or $A$):** This matrix defines the physical kinematics of the system. We assume a linear constant-velocity model, meaning the predicted next position is calculated as the current position plus the velocity scaled by the time step between frames (e.g., $x_{k} = x_{k-1} + v_x \Delta t$).
+* **Observation Matrix ($H$):** This maps the 6D state space down to the 3D measurement space. It isolates the positional elements of the state vector so they can be directly compared against our raw YOLO-derived depth measurements.
+* **Noise Covariances ($Q$ and $R$):** * **Process Noise ($Q$):** Accounts for physical deviations from our constant velocity assumption (e.g., the container suddenly accelerating or decelerating).
+    * **Measurement Noise ($R$):** Represents the confidence in our sensor data. In this context, it accounts for the inherent jitter in YOLO bounding boxes and the resulting noise in the depth estimations.
+
+By maintaining internal velocity states despite only measuring position, the filter effectively smooths out sudden jumps and maintains trajectory continuity during partial occlusions.
+
+### Results
+
+The XYZ position graph comparing the raw measured signals to the filtered trajectory is illustrated in the following figure:
 
 <img src="./results/trajectory_kf_vs_raw.png" alt="KF Results vs. raw measurements" width="500"/>
 
-
-The result of the jitter reduction in the stationary readings are as follows:
+The quantitative impact of the filter is particularly noticeable during stationary periods, where bounding box flickering typically introduces significant noise. The jitter reduction results are as follows:
 
 ```bash
 =============================================
@@ -306,7 +337,6 @@ X (Forward)     | 0.0416     | 0.0267     | 35.8%
 Y (Left)        | 0.1090     | 0.1093     | -0.3%
 Z (Up)          | 0.0101     | 0.0052     | 48.6%
 =============================================
-```
 ---
 <!-- ---================================================================================================================== -->
 
