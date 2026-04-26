@@ -350,11 +350,8 @@ class PositionKalman:
             # --- State vector (6x1) ---
             self.x = np.zeros((6, 1), dtype=np.float64)
 
-            # Initial uncertainty: 
-            # Make it VERY uncertain at the start so it snaps to the first measurement instantly
             self.P = np.diag([10, 10, 10, 100, 100, 100])
 
-            # --- State transition model (constant velocity) ---
             self.F = np.array([
                 [1, 0, 0, dt, 0,  0],
                 [0, 1, 0, 0,  dt, 0],
@@ -364,25 +361,15 @@ class PositionKalman:
                 [0, 0, 0, 0,  0,  1],
             ], dtype=np.float64)
 
-            # --- Measurement model (we observe position only) ---
             self.H = np.array([
                 [1, 0, 0, 0, 0, 0],
                 [0, 1, 0, 0, 0, 0],
                 [0, 0, 1, 0, 0, 0],
             ], dtype=np.float64)
 
-            # --- Process noise (Q) --- 
-            # Keep q_pos tiny.
-            # Drop q_vel to 0.1. This reduces the "momentum" so the filter 
-            # stops immediately when the raw data stops, fixing the negative Y reduction.
             q_pos = 0.001 
             q_vel = 0.1  
             self.Q = np.diag([q_pos, q_pos, q_pos, q_vel, q_vel, q_vel])
-
-            # --- Measurement noise (R) ---
-            # X: 0.1 (Standard smoothing)
-            # Y: 0.01 (Very low! Tells the filter to trust the raw Y data because it is clean)
-            # Z: 0.5 (High! Tells the filter to aggressively smooth the noisy depth estimations)
             self.R = np.diag([0.1, 0.01, 0.5])
 
     # -------------------------------------------------
@@ -402,19 +389,10 @@ class PositionKalman:
         """
         z = np.asarray(xyz_meas, dtype=np.float64).reshape(3, 1)
 
-        # Innovation
         y = z - (self.H @ self.x)
-
-        # Innovation covariance
         S = self.H @ self.P @ self.H.T + self.R
-
-        # Kalman gain
         K = self.P @ self.H.T @ np.linalg.inv(S)
-
-        # Update state
         self.x = self.x + K @ y
-
-        # Update covariance
         I = np.eye(6)
         self.P = (I - K @ self.H) @ self.P
 
