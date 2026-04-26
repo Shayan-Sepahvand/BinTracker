@@ -180,6 +180,12 @@ frame_id,timestamp_ms,x_cam,y_cam,z_cam,confidence
 0009,300,0.02,0.21,3.02,0.78
 0010,334,0.02,0.21,3.02,0.80
 ```
+
+
+<img src="./results/justification3.png" alt="Proof" width="500"/>
+<img src="./results/justification4.png" alt="Proof" width="500"/>
+
+
 ---
 <!-- ---================================================================================================================== -->
 
@@ -201,6 +207,12 @@ frame_id,t_ms,x_cam,y_cam,z_cam,x_world,y_world,z_world,conf
 0009,300,0.02,0.21,3.02,2.87,-0.02,0.37,0.78
 0010,334,0.02,0.21,3.02,2.87,-0.02,0.37,0.80
 ```
+
+The following screenshots shows the justification of the code:
+
+<img src="./results/justification1.png" alt="Proof" width="500"/>
+<img src="./results/justification2.png" alt="Proof" width="500"/>
+
 ---
 <!-- ---================================================================================================================== -->
 
