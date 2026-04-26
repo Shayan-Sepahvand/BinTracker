@@ -204,7 +204,7 @@ def estimate_3d(bbox, K, D, bin_height_m=0.65, bin_diameter_m=0.4):
     # 6. Project to 3D Space
     X = x_n * Z
     Y = y_n * Z
-    Z = Z + (bin_diameter_m / 2.0) 
+    # Z = Z + (bin_diameter_m / 2.0) 
 
     
     return np.array([X, Y, Z])
