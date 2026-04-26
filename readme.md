@@ -54,7 +54,7 @@ curl [https://pyenv.run](https://pyenv.run) | bash
 ## ⚙️ How to run
 
 ```bash
- ./run.sh --video input.mp4 --calib calib.json --kalman --gpu
+ ./run.sh --video input.mp4 --calib calib.json --kalman 
 ```
 ---
 
@@ -180,7 +180,7 @@ The RViz visualization of this scenario, alongside a comparison between our calc
 
 ## Question 2 - Part B: position in camera frame
 
-The dataset was partitioned into an 80% training set and a 20% validation set. Several examples from the dataset are provided below:
+The dataset was partitioned into an 80% training set and a 20% validation set. Several examples from the dataset are provided below: (Using CPU Here)
 
 ```csv
 frame_id,timestamp_ms,x_cam,y_cam,z_cam,confidence
@@ -208,7 +208,7 @@ The theoretical justification of the code can be found in the following figures:
 
 ## Question 2 - Part C: Transform to world frame
 
-This also have been achieved. The file is stored in the /resutls/2c.csv. The follwoings examplify the world coordinate frame as a timestamped csv.
+This also have been achieved. The file is stored in the /resutls/2c.csv. The follwoings examplify the world coordinate frame as a timestamped csv. (Using CPU here)
 
 ```csv
 frame_id,t_ms,x_cam,y_cam,z_cam,x_world,y_world,z_world,conf
@@ -279,7 +279,7 @@ The computed RMSE between the GT and the estimated stop points are:
 
 ## Question 3 - Part A: Live coordinate stream
 
-This has been completed and a few of the generated output are as follows:
+This has been completed and a few of the generated output are as follows: (CPU used here)
 
 ```bash
 frame [849] bin @ world (4.27, -0.10, 0.09) m conf=0.70 dt=138ms
