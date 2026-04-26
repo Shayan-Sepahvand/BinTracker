@@ -73,7 +73,7 @@ def build_extrinsic(cam_h: float, tilt_rad: float):
     ], dtype=np.float64)
 
     # --- how can we rotate the camera so that it get backs to untilted pose
-    c, s = np.cos(-tilt_rad), np.sin(-tilt_rad)
+    c, s = np.cos(tilt_rad), np.sin(tilt_rad)
     Ttilt = np.array([
         [1,  0,  0,  0],
         [0,  c, -s,  0],
@@ -167,92 +167,74 @@ def draw_bounding_box(frame, x1, y1, x2, y2, conf):
 
 # ── 3D localisation ───────────────────────────────────────────────────────────
 
-def estimate_3d(bbox, K, D, bin_height_m=0.65):
-    # Extract BBox data
-    u_dist = (bbox[0] + bbox[2]) / 2.0
-    v_dist = (bbox[1] + bbox[3]) / 2.0
-    h_px = np.abs(bbox[3] - bbox[1])
+def estimate_3d(bbox, K, D, bin_height_m=0.65, bin_diameter_m=0.4):
+    # 1. Format the bounding box corners for OpenCV (shape: N, 1, 2)
+    # Using top-left (bbox[0], bbox[1]) and bottom-right (bbox[2], bbox[3])
+    points_distorted = np.array([
+        [[bbox[0], bbox[1]]], 
+        [[bbox[2], bbox[3]]]
+    ], dtype=np.float32)
+
+    # 2. Undistort the points back into PIXEL coordinates
+    # Passing P=K projects the mathematically ideal points back onto your image dimensions
+    points_undistorted = cv2.undistortPoints(points_distorted, K, D, P=K)
+    
+    # Extract the undistorted pixel coordinates
+    u_min, v_min = points_undistorted[0][0]
+    u_max, v_max = points_undistorted[1][0]
+
+    # 3. Calculate the undistorted center and height in pixels
+    u_center = (u_min + u_max) / 2.0
+    v_center = (v_min + v_max) / 2.0
+    
+    # Undistorted pixel height (immune to lens warping)
+    dv = abs(v_max - v_min)
 
     # Extract Intrinsics
     fx, fy = K[0, 0], K[1, 1]
     cx, cy = K[0, 2], K[1, 2]
-    k1, k2, p1, p2, k3 = D
 
-    # 1. Depth (Z) calculation
-    # Derived from: Z = (fy * Real_Height) / Pixel_Height
-    Z = (fy * bin_height_m) / h_px
-    Z = Z + (BIN_DIAMETER_M/2) 
+    # 4. Depth (Z) calculation using the true (undistorted) pixel height
+    Z = (fy * bin_height_m) / dv
 
-    # 2. Convert pixel to normalized distorted coordinates
-    x_d = (u_dist - cx) / fx
-    y_d = (v_dist - cy) / fy
+    # 5. Convert undistorted center pixels to normalized coordinates
+    x_n = (u_center - cx) / fx
+    y_n = (v_center - cy) / fy
 
-    # 3. Iterative Undistortion (Reversing the D coefficients)
-    # We start by assuming the undistorted point (x, y) is the distorted one
-    x, y = x_d, y_d
-    
-    for _ in range(5): # 5 iterations is standard for high precision
-        r2 = x*x + y*y
-        r4 = r2*r2
-        r6 = r2*r4
-        
-        # Radial distortion term
-        radial = 1 + k1*r2 + k2*r4 + k3*r6
-        
-        # Tangential distortion terms
-        dx = 2*p1*x*y + p2*(r2 + 2*x*x)
-        dy = p1*(r2 + 2*y*y) + 2*p2*x*y
-        
-        # Update estimate: x_undist = (x_distorted - tangential) / radial
-        x = (x_d - dx) / radial
-        y = (y_d - dy) / radial
+    # 6. Project to 3D Space
+    X = x_n * Z
+    Y = y_n * Z
+    Z = Z + (bin_diameter_m / 2.0) 
 
-    # 4. Project back to Camera 3D Space
-    X = x * Z
-    Y = y * Z
     
     return np.array([X, Y, Z])
 
 # ── 3D localisation (bonus) ───────────────────────────────────────────────────────────
 
 def estimate_3d_wp(K, D, waypoint, Z_frame):
+    # 1. Format the single waypoint for OpenCV (shape: N, 1, 2)
+    points_distorted = np.array([
+        [[waypoint[0], waypoint[1]]]
+    ], dtype=np.float32)
 
-    u_dist = waypoint[0]
-    v_dist = waypoint[1]
+    # 2. Undistort the point back into PIXEL coordinates
+    # Passing P=K projects the mathematically ideal point back onto your image dimensions
+    points_undistorted = cv2.undistortPoints(points_distorted, K, D, P=K)
+    
+    # Extract the undistorted pixel coordinates
+    u_undist, v_undist = points_undistorted[0][0]
 
     # Extract Intrinsics
     fx, fy = K[0, 0], K[1, 1]
     cx, cy = K[0, 2], K[1, 2]
-    k1, k2, p1, p2, k3 = D
 
+    # 3. Convert undistorted pixels to normalized coordinates
+    x_n = (u_undist - cx) / fx
+    y_n = (v_undist - cy) / fy
 
-    # 2. Convert pixel to normalized distorted coordinates
-    x_d = (u_dist - cx) / fx
-    y_d = (v_dist - cy) / fy
-
-    # 3. Iterative Undistortion (Reversing the D coefficients)
-    # We start by assuming the undistorted point (x, y) is the distorted one
-    x, y = x_d, y_d
-    
-    for _ in range(5): # 5 iterations is standard for high precision
-        r2 = x*x + y*y
-        r4 = r2*r2
-        r6 = r2*r4
-        
-        # Radial distortion term
-        radial = 1 + k1*r2 + k2*r4 + k3*r6
-        
-        # Tangential distortion terms
-        dx = 2*p1*x*y + p2*(r2 + 2*x*x)
-        dy = p1*(r2 + 2*y*y) + 2*p2*x*y
-        
-        # Update estimate: x_undist = (x_distorted - tangential) / radial
-        x = (x_d - dx) / radial
-        y = (y_d - dy) / radial
-
-    # 4. Project back to Camera 3D Space
-    X = x * Z_frame
-    Y = y * Z_frame
+    # 4. Project to 3D Space using the provided Z_frame depth
+    X = x_n * Z_frame
+    Y = y_n * Z_frame
     
     return np.array([X, Y, Z_frame])
 
@@ -589,7 +571,7 @@ def main():
 
                 filename = os.path.join(save_path_detected_imgs, f"frame_{frame_id:05d}.png")
                 cv2.imwrite(filename, frame)                # 2. Calculate 3D coordinates
-                xyz_cam = estimate_3d((x1, y1, x2, y2), K, D, BIN_HEIGHT_M)
+                xyz_cam = estimate_3d((x1, y1, x2, y2), K, D, BIN_HEIGHT_M, BIN_DIAMETER_M)
                 x_c, y_c, z_c = xyz_cam
                 Pw = cam_to_world(xyz_cam, Tcam)
 
@@ -688,6 +670,7 @@ def main():
         plot_inference_performance(inference_times, args)
 
     # end of 2d ============================================
+    print(stop_positions)
     plot_world_trajectory(trajectory, stop_positions, save_path="./results/trajectory.png")
     if kf is not None:
         kf.plot_raw_vs_filtered_position(trajectory, trajectory_KF)

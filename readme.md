@@ -33,7 +33,7 @@ It is designed to run on GPU-accelerated systems using CUDA and provides a repro
 
 
 
-This package requires pyenv installation:
+***IMPORTANT NOTE***: This package requires virutual python via pyenv installation. The following is recommended:
 
 ```bash
 sudo apt update
@@ -59,9 +59,6 @@ sudo apt install -y python3-venv
 ```bash
 ./run.sh --video input.mp4 --calib calib.json --gpu --kalman
 ```
-
-
-
 ---
 
 ## Question (1) - Part (a): Model Selection and Motivation
@@ -149,42 +146,6 @@ The dataset is splited into %80 training and %20 validation. The follwoings are 
 ---
 ## Question 2 - Part A: Distance estimation from bounding box
 
-```python
-def build_extrinsic(cam_h: float, tilt_rad: float):
-
-    """
-    Construct the extrinsics of the camera using the give fixed static tf.
-    Returns:
-      R and t
-    """
-    # --- Axis mapping: camera -> world ---
-    # each of the columns is the result of the projection of the camera axis on the world coordinates, e.g. the camera x axis lies on the world -y axis.
-    Rs = np.array([
-        [ 0,  0,  1],   # world_X = cam_Z
-        [-1,  0,  0],   # world_Y = -cam_X
-        [ 0, -1,  0],   # world_Z = -cam_Y
-    ], dtype=np.float64)
-
-
-    # --- This is a basic roation around the camera local x-axis, which is given to be -15 degrees. 
-    c, s = np.cos(tilt_rad), np.sin(tilt_rad)
-    Rx = np.array([
-        [1,  0,  0],
-        [0,  c, -s],
-        [0,  s,  c],
-    ], dtype=np.float64)
-
-    # The rotation matrix that transforms from camera to the spatial (world frame).
-    # The rotation from the tilted camera {frame 2} to untilted camera {frame 1} is Rx,
-    # The rotation from the untilted camera {frame 1} to the world frame {frame 0} is static here.
-    # The rotation from the the tilted camera frame {frame 2} to the world frame {frame 0} is Rs @ Rx.
-    # The world postion vector should be described w.r.t world frame, thus, Pworld = Rs @ Rx @ Pcam + t 
-    R = Rs @ Rx
-    t = np.array([0.0, 0.0, cam_h]) #this is the postion vec. that starts from the world and ends at the camera optical centre
-
-    return R, t
-```
-
 
 Once the extrinsics are found, it is possible to reconstruct the world coordinates up to a scale due to as the camera projection is an affine transformation on the homogenous coordinates. 
 
@@ -199,8 +160,6 @@ The rviz visualization of this scneario along with the transformation tested vs.
 
 
 ---
-
-
 <!-- ---================================================================================================================== -->
 
 ## Question 2 - Part B: position in camera frame
@@ -209,17 +168,17 @@ The requested file can be found in the following directory after the execution: 
 
 ```csv
 frame_id,timestamp_ms,x_cam,y_cam,z_cam,confidence
-0000,0,-0.04,0.20,3.02,0.85
-0001,33,-0.03,0.20,2.99,0.84
-0002,67,-0.03,0.20,2.93,0.82
-0003,100,-0.03,0.20,2.93,0.81
-0004,133,-0.02,0.20,2.90,0.84
-0005,167,-0.01,0.20,2.92,0.86
-0006,200,0.00,0.20,2.90,0.86
-0007,234,0.01,0.20,2.87,0.85
-0008,267,0.01,0.20,2.87,0.85
-0009,300,0.01,0.21,2.86,0.78
-0010,334,0.02,0.21,2.86,0.80
+000,0,-0.04,0.20,3.19,0.85
+0001,33,-0.03,0.20,3.16,0.84
+0002,67,-0.03,0.20,3.10,0.82
+0003,100,-0.03,0.20,3.10,0.81
+0004,133,-0.02,0.20,3.07,0.84
+0005,167,-0.01,0.20,3.09,0.86
+0006,200,0.00,0.20,3.07,0.86
+0007,234,0.01,0.21,3.03,0.85
+0008,267,0.01,0.21,3.03,0.85
+0009,300,0.02,0.21,3.02,0.78
+0010,334,0.02,0.21,3.02,0.80
 ```
 ---
 <!-- ---================================================================================================================== -->
@@ -230,16 +189,17 @@ This also have been achieved. The file is stored in the /resutls/2c.csv. The fol
 
 ```csv
 frame_id,t_ms,x_cam,y_cam,z_cam,x_world,y_world,z_world,conf
-0000,0,-0.04,0.20,3.02,2.86,0.04,0.38,0.85
-0001,33,-0.03,0.20,2.99,2.83,0.03,0.38,0.84
-0002,67,-0.03,0.20,2.93,2.78,0.03,0.40,0.82
-0003,100,-0.03,0.20,2.93,2.78,0.03,0.40,0.81
-0004,133,-0.02,0.20,2.90,2.75,0.02,0.40,0.84
-0005,167,-0.01,0.20,2.92,2.77,0.01,0.40,0.86
-0006,200,0.00,0.20,2.90,2.75,-0.00,0.40,0.86
-0007,234,0.01,0.20,2.87,2.72,-0.01,0.41,0.85
-0008,267,0.01,0.20,2.87,2.72,-0.01,0.41,0.85
-0009,300,0.01,0.21,2.86,2.71,-0.01,0.41,0.78
+0000,0,-0.04,0.20,3.19,3.03,0.04,0.33,0.85
+0001,33,-0.03,0.20,3.16,3.00,0.03,0.34,0.84
+0002,67,-0.03,0.20,3.10,2.94,0.03,0.35,0.82
+0003,100,-0.03,0.20,3.10,2.94,0.03,0.35,0.81
+0004,133,-0.02,0.20,3.07,2.91,0.02,0.36,0.84
+0005,167,-0.01,0.20,3.09,2.93,0.01,0.35,0.86
+0006,200,0.00,0.20,3.07,2.91,-0.00,0.36,0.86
+0007,234,0.01,0.21,3.03,2.88,-0.01,0.37,0.85
+0008,267,0.01,0.21,3.03,2.88,-0.01,0.37,0.85
+0009,300,0.02,0.21,3.02,2.87,-0.02,0.37,0.78
+0010,334,0.02,0.21,3.02,2.87,-0.02,0.37,0.80
 ```
 ---
 <!-- ---================================================================================================================== -->
@@ -272,16 +232,15 @@ The estimated ground-truth stops for the bin trajectory were extracted as 3D spa
 
 | Stop | X-Axis (m) | Y-Axis (m) | Z-Axis (m) |
 | :--- | :---: | :---: | :---: |
-| **Point A** | 2.2227 | $0.0000$ | 0.7731 |
-| **Point B** | 3.9570 | -0.6736 | 0.6010 |
-| **Point C** | 3.7013 | 0.3818 | 0.7868 |
-
+| **Point A** |2.3683| $0$ |  0.73527 |
+| **Point B** | 4.0731 | -0.69335 | 0.57906 |
+| **Point C** | 3.8735 |  0.39961 | 0.76056 |
 
 The computed RMSE between the GT and the estimated stop points are:
 
 ```bash
 =============================================
-[run.sh] RMSE per axis (m): x=0.15, y=1.06, z=0.44
+[run.sh] RMSE per axis: x=0.15, y=1.06, z=0.46
 =============================================
 ```
 
@@ -294,20 +253,14 @@ The computed RMSE between the GT and the estimated stop points are:
 This has been completed and a few of the generated output are as follows:
 
 ```bash
-frame [297] bin @ world (3.81, 0.68, 0.19) m conf=0.77 dt=148ms
-frame [298] bin @ world (3.73, 0.65, 0.21) m conf=0.80 dt=147ms
-frame [299] bin @ world (3.81, 0.63, 0.19) m conf=0.82 dt=151ms
-frame [300] bin @ world (3.81, 0.61, 0.19) m conf=0.79 dt=151ms
-frame [301] bin @ world (3.81, 0.61, 0.19) m conf=0.79 dt=149ms
-frame [302] bin @ world (3.73, 0.57, 0.20) m conf=0.62 dt=148ms
-frame [303] bin @ world (3.65, 0.54, 0.22) m conf=0.75 dt=148ms
-frame [304] bin @ world (3.66, 0.54, 0.22) m conf=0.73 dt=147ms
-frame [305] OCCLUDED - last known(3.66, 0.54, 0.22) m  age=1fr
-frame [306] OCCLUDED - last known(3.66, 0.54, 0.22) m  age=2fr
-frame [307] bin @ world (3.53, 0.49, 0.25) m conf=0.59 dt=145ms
-frame [308] bin @ world (3.69, 0.49, 0.21) m conf=0.76 dt=145ms
-frame [309] bin @ world (3.71, 0.46, 0.21) m conf=0.77 dt=144ms
-
+frame [851] bin @ world (4.44, -0.10, 0.04) m conf=0.68 dt=151ms
+frame [852] bin @ world (4.42, -0.10, 0.05) m conf=0.63 dt=151ms
+frame [853] bin @ world (4.42, -0.10, 0.05) m conf=0.62 dt=150ms
+frame [854] bin @ world (4.42, -0.10, 0.05) m conf=0.54 dt=150ms
+frame [855] OCCLUDED - last known (4.42, -0.10, 0.05) m  age=1fr
+frame [856] bin @ world (4.46, -0.10, 0.03) m conf=0.52 dt=153ms
+frame [857] OCCLUDED - last known (4.46, -0.10, 0.03) m  age=1fr
+frame [858] OCCLUDED - last known (4.46, -0.10, 0.03) m  age=2fr
 ```
 ---
 
