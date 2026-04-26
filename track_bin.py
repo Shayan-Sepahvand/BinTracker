@@ -648,7 +648,7 @@ def main():
         plot_inference_performance(inference_times, args)
 
     # end of 2d ============================================
-    # print(stop_positions)
+    print(stop_positions)
     plot_world_trajectory(trajectory, stop_positions, save_path="./results/trajectory.png")
     if kf is not None:
         kf.plot_raw_vs_filtered_position(trajectory, trajectory_KF)

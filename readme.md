@@ -261,9 +261,9 @@ The estimated ground-truth stops for the bin trajectory were extracted as 3D spa
 
 | Stop | X-Axis (m) | Y-Axis (m) | Z-Axis (m) |
 | :--- | :---: | :---: | :---: |
-| **Point A** |2.3683| $0$ |  0.73527 |
-| **Point B** | 4.0731 | -0.69335 | 0.57906 |
-| **Point C** | 3.8735 |  0.39961 | 0.76056 |
+| **Point A** | 2.1747| 0 |  0.78552 |
+| **Point B** | 3.876 | -0.6598 | 0.61636 |
+| **Point C** | 3.6745 |  0.37909, |  0.79084 |
 
 The computed RMSE between the GT and the estimated stop points are:
 
