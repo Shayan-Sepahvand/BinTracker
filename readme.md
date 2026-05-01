@@ -58,7 +58,7 @@ curl [https://pyenv.run](https://pyenv.run) | bash
 ```
 ---
 
-## Question (1) - Part (a): Model Selection and Motivation
+## Model Selection and Motivation
 
 For this task, I selected the YOLOv10 architecture due to its strong balance between detection accuracy and real-time inference performance. A key advantage of YOLOv10 is its post-processing overhead reduction which leads to lower latency—critical for meeting the <100 ms/frame constraint. Initial experiments were conducted using COCO-pretrained weights, which include a rash can class. However, these models did not generalize well to the provided video. Specifically:
 
@@ -107,7 +107,7 @@ Furthermore, the bounding box coordinates are stored in the /results/1a.csv
 ---
 <!-- ---================================================================================================================== -->
 
-## Question 1 - Part B: Occlusion continuity
+## Occlusion continuity
 
 The detection images are included in the results directory. As shown in the following figures, detection is successfully maintained even in the presence of partial occlusion. This is thanks to the rich training dataset, which included augmented, partially occluded images.
 
@@ -139,7 +139,7 @@ results = model.train(
 
 ---
 
-## Question 1 - Part C: Model choice justification
+## Model choice justification
 
 To evaluate the impact of our custom dataset and fine-tuning process, we compared the resulting model against the baseline pre-trained weights. The fine-tuned model demonstrates significant quantitative gains across all primary detection metrics.
 
@@ -162,7 +162,7 @@ The dataset is splited into %80 training and %20 validation. The follwoings are 
 
 <!-- ---================================================================================================================== -->
 ---
-## Question 2 - Part A: Distance estimation from bounding box
+## Distance estimation from bounding box
 
 Once the camera extrinsics are established, 3D world coordinates can be reconstructed up to a scale factor, since the camera projection acts as a transformation on homogeneous coordinates. 
 
@@ -178,7 +178,7 @@ The RViz visualization of this scenario, alongside a comparison between our calc
 ---
 <!-- ---================================================================================================================== -->
 
-## Question 2 - Part B: position in camera frame
+## Position in camera frame
 
 The dataset was partitioned into an 80% training set and a 20% validation set. Several examples from the dataset are provided below: (Using CPU Here)
 
@@ -206,7 +206,7 @@ The theoretical justification of the code can be found in the following figures:
 ---
 <!-- ---================================================================================================================== -->
 
-## Question 2 - Part C: Transform to world frame
+## Transform to world frame
 
 This also have been achieved. The file is stored in the /resutls/2c.csv. The follwoings examplify the world coordinate frame as a timestamped csv. (Using CPU here)
 
@@ -233,7 +233,7 @@ The following screenshots shows the justification of the code:
 ---
 <!-- ---================================================================================================================== -->
 
-## Question 2 - Part D: Error analysis vs. ground-truth waypoints
+## Error analysis vs. ground-truth waypoints
 
 The waypoint.json data is extracted using this function:
 
@@ -277,7 +277,7 @@ The computed RMSE between the GT and the estimated stop points are:
 
 <!-- ---================================================================================================================== -->
 
-## Question 3 - Part A: Live coordinate stream
+## Live coordinate stream
 
 This has been completed and a few of the generated output are as follows: (CPU used here)
 
@@ -298,7 +298,7 @@ frame [858] OCCLUDED - last known (4.27, -0.10, 0.09) m  age=2fr
 
 <!-- ---================================================================================================================== -->
 
-## Question 3 - Part B: Trajectory visualisation
+## Trajectory visualisation
 
 A top-down view of the bin trajecory in the world frame along with the three stop points, start and stop positions are included and stored in results/trajectory.png.
 
@@ -344,7 +344,7 @@ Z (Up)          | 0.0091     | 0.0030     | 67.0%
 ---
 <!-- ---================================================================================================================== -->
 
-## Question 3 - Part D: Edge deployment notes (Jetson Orin NX)
+## Edge deployment notes (Jetson Orin NX)
 
 This section outlines the architectural migration of the pipeline from a fixed-camera workstation to a **Jetson Orin NX** companion computer mounted on a moving UAV for real-time trajectory tracking.
 
@@ -392,7 +392,3 @@ To maintain a stable flight control loop, the "Photon-to-Actuator" latency must 
 
 
 <!-- ---================================================================================================================== -->
-
-## Demo screen recording
-
-This is shared directly and not commited as per request.
