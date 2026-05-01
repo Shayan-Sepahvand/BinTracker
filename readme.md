@@ -20,12 +20,6 @@ This project implements a computer vision pipeline to detect and track industria
 
 ---
 
-## 📖 Overview
-
-This project implements a computer vision pipeline to detect and track industrial waste containers using YOLOv10. By combining 2D object detection with camera intrinsics and the bin's known physical dimensions, the system accurately estimates the full 3D spatial trajectory of the container.
-
----
-
 ## ⚙️ Requirements
 
 | Component       | Version / Details           |
