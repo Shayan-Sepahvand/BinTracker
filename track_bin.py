@@ -1,9 +1,3 @@
-"""
-Skyscouter – Computer Vision Engineer Technical Assessment
-Skeleton file: track_bin.py  (v2 – updated with geometry guidance)
-Restructure freely. This is a starting point only.
-"""
-
 import cv2
 import json
 import argparse
